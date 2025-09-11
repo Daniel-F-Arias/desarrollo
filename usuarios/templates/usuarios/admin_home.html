@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel del Administrador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 80px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 25px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .logout {
+            background-color: #dc3545;
+        }
+
+        .logout:hover {
+            background-color: #a71d2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Bienvenido, {{ user.username }} (Administrador)</h2>
+
+        <a href="{% url 'editar_usuario' request.user.id %}" class="btn btn-primary">Editar cuenta</a>
+        <a href="{% url 'eliminar_usuario' request.user.id %}" class="btn btn-danger">Eliminar cuenta</a>
+        <a href="{% url 'lista_usuarios' %}" class="btn">Buscar usuario</a>
+        <a href="{% url 'listar_productos' %}"class="btn">Ver productos</a>
+        <a href="{% url 'logout' %}" class="btn logout">Cerrar sesión</a>
+    </div>
+</body>
+</html>
