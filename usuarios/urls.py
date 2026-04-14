@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import login_view, logout_view, home, actualizar_usuario, eliminar_usuario,register_view, lista_usuarios, admin_home,crear_usuario
-
+from . import views
 
 urlpatterns = [
     path('login/', login_view, name='login'),
@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin_home/', admin_home, name='admin_home'),
     path('productos/', include('productos.urls')),
     path('crear/', crear_usuario, name='crear_usuario'),
+    path('acciones/', views.ver_acciones, name='ver_acciones'),
 
 ]
 

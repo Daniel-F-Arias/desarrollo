@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    body {
+        background-color: #f4f6f8;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .acciones-container {
+        max-width: 900px;
+        margin: 60px auto;
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 25px;
+        font-size: 26px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    th {
+        background-color: #007bff;
+        color: white;
+        text-align: left;
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 14px;
+        color: #333;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    tr:hover {
+        background-color: #eef4ff;
+    }
+
+    .no-acciones {
+        text-align: center;
+        color: #888;
+        padding: 30px;
+        font-size: 16px;
+    }
+
+    .btn-volver {
+        display: inline-block;
+        margin-top: 20px;
+        background-color: #6c757d;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background-color 0.3s;
+    }
+
+    .btn-volver:hover {
+        background-color: #5a6268;
+    }
+</style>
+
+<div class="acciones-container">
+    <h2>📜 Registro de acciones de usuarios</h2>
+
+    {% if acciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Detalle</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in acciones %}
+            <tr>
+                <td>{{ a.usuario.username }}</td>
+                <td>{{ a.accion }}</td>
+                <td>{{ a.detalle }}</td>
+                <td>{{ a.fecha|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-acciones">No hay acciones registradas todavía.</div>
+    {% endif %}
+
+    <div style="text-align:center;">
+        <a href="{% url 'admin_home' %}" class="btn-volver">⬅ Volver al panel</a>
+    </div>
+</div>
+{% endblock %}
