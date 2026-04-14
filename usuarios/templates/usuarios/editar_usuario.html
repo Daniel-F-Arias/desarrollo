@@ -13,6 +13,7 @@
     <h2 class="mb-4">¿Qué deseas cambiar?</h2>
 
     <div class="mb-4">
+        <button class="btn btn-outline-primary me-2" onclick="mostrar('identificacion')">Número de identificación</button>
         <button class="btn btn-outline-primary me-2" onclick="mostrar('username')">Nombre de usuario</button>
         <button class="btn btn-outline-primary me-2" onclick="mostrar('email')">Correo electrónico</button>
         <button class="btn btn-outline-primary" onclick="mostrar('password')">Contraseña</button>
@@ -20,6 +21,14 @@
 
     <form method="post" class="border p-4 rounded shadow-sm bg-light">
         {% csrf_token %}
+
+        <!-- Cambiar identificación -->
+        <div id="identificacion" class="form-section">
+            <div class="mb-3">
+                <label class="form-label">Número de identificación:</label>
+                <input type="text" name="identificacion" class="form-control" value="{{ usuario.first_name }}">
+            </div>
+        </div>
 
         <!-- Cambiar nombre -->
         <div id="username" class="form-section">
@@ -51,8 +60,8 @@
 
         <button type="submit" class="btn btn-success">Guardar cambios</button>
         <a href="{{ volver_url }}" class="btn btn-secondary mt-3">Cancelar</a>
-
     </form>
+
 
     <script>
         function mostrar(id) {

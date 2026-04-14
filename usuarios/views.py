@@ -6,10 +6,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
-from django.db.models import Q
 from productos.models import Producto
 from .forms import CrearUsuarioForm
 from django.urls import reverse
+from usuarios.utils import registrar_accion
 
 #Activar entorno virtual: venv\Scripts\activate.bat
 
@@ -20,6 +20,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+            registrar_accion(user, "Inicio de sesión")
             if user.is_superuser:
                 return redirect('admin_home')
             else:
@@ -29,8 +30,11 @@ def login_view(request):
     return render(request, 'usuarios/login.html')
 
 def logout_view(request):
-    logout(request)
-    return redirect('login')  # Redirige a la página de login
+    if request.user.is_authenticated:
+        registrar_accion(request.user,"Cierre de sesión")
+        logout(request)
+        messages.success(request, "Has cerrado sesión correctamente.")
+    return redirect('login')
 
 @login_required
 def home(request):
@@ -39,25 +43,46 @@ def home(request):
 
 def register_view(request):
     if request.method == "POST":
+        identificacion = request.POST['identificacion']  
         username = request.POST['username']
         email = request.POST['email']
         password1 = request.POST['password1']
         password2 = request.POST['password2']
 
         if password1 == password2:
-            if User.objects.filter(username=username).exists():
-                messages.error(request, "El usuario ya existe")
-            elif User.objects.filter(email=email).exists():
+            usuario_inactivo = User.objects.filter(username=username, is_active=False).first() \
+                               or User.objects.filter(email=email, is_active=False).first()
+            if usuario_inactivo:
+                # Reactivar usuario
+                usuario_inactivo.username = username
+                usuario_inactivo.email = email
+                usuario_inactivo.set_password(password1)
+                usuario_inactivo.first_name = identificacion
+                usuario_inactivo.is_active = True
+                usuario_inactivo.save()
+                messages.success(request, "Cuenta reactivada exitosamente.")
+                return redirect('login')
+            
+            elif User.objects.filter(email=email, is_active=True).exists():
                 messages.error(request, "El email ya está registrado")
             else:
-                user = User.objects.create_user(username=username, email=email, password=password1)
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password1
+                )
+                user.first_name = identificacion  
+                user.is_active = True   # por si acaso
                 user.save()
+
                 messages.success(request, "Cuenta creada exitosamente.")
                 return redirect('login')
         else:
             messages.error(request, "Las contraseñas no coinciden")
 
     return render(request, 'usuarios/register.html')
+
+
 
 
 def es_admin(user):
@@ -74,28 +99,39 @@ def actualizar_usuario(request, user_id):
         return redirect('home')
 
     if request.method == 'POST':
+        nueva_identificacion = request.POST.get('identificacion', '').strip()
         nuevo_usuario = request.POST.get('username', '').strip()
         nuevo_email = request.POST.get('email', '').strip()
         nueva_pass1 = request.POST.get('password1', '').strip()
         nueva_pass2 = request.POST.get('password2', '').strip()
 
+        if nueva_identificacion:
+            usuario.first_name = nueva_identificacion  
+
         if nuevo_usuario:
+            if User.objects.filter(username=nuevo_usuario).exclude(pk=usuario.pk).exists():
+                messages.error(request, "Ese nombre de usuario ya está en uso.")
+                return redirect('editar_usuario', user_id=usuario.id)
             usuario.username = nuevo_usuario
 
         if nuevo_email:
+            if User.objects.filter(email=nuevo_email, is_active=True).exclude(pk=usuario.pk).exists():
+                messages.error(request, "Ese email ya está en uso.")
+                return redirect('editar_usuario', user_id=usuario.id)
             usuario.email = nuevo_email
 
         if nueva_pass1 or nueva_pass2:
             if nueva_pass1 == nueva_pass2:
                 usuario.set_password(nueva_pass1)
-                messages.success(request, "Contraseña actualizada. Por favor, inicia sesión nuevamente.")
                 usuario.save()
+                messages.success(request, "Contraseña actualizada. Por favor, inicia sesión nuevamente.")
                 return redirect('login')
             else:
                 messages.error(request, "Las contraseñas no coinciden.")
                 return redirect('editar_usuario', user_id=usuario.id)
 
         usuario.save()
+        registrar_accion(request.user, "Actualizó su perfil", f"Usuario: {usuario.username}")
         messages.success(request, "Los datos fueron actualizados correctamente.")
     
         if request.user.is_superuser:
@@ -105,7 +141,6 @@ def actualizar_usuario(request, user_id):
 
     else:
         es_admin = request.user.is_superuser
-        # Captura la URL de donde vino el usuario, por si quiere cancelar
         volver_url = request.META.get('HTTP_REFERER', reverse('home'))
 
         return render(request, 'usuarios/editar_usuario.html', {
@@ -115,29 +150,32 @@ def actualizar_usuario(request, user_id):
         })
 
 
-
-
 # ❌ Eliminar cuenta
 @login_required
 def eliminar_usuario(request, user_id):
     user = get_object_or_404(User, id=user_id)
 
     if request.user != user and not request.user.is_superuser:
-        messages.error(request, "No tienes permiso para eliminar este usuario.")
+        messages.error(request, "No tienes permiso para desactivar este usuario.")
         return redirect('home')
 
     if request.method == "POST":
         es_mismo_usuario = request.user == user
-        user.delete()
-        messages.success(request, "Cuenta eliminada correctamente.")
-        return redirect('login' if es_mismo_usuario else 'lista_usuarios')
+        user.is_active = False  
+        user.save()
+        registrar_accion(request.user, "Desactivó una cuenta", f"Usuario afectado: {user.username}")
+        messages.success(request, "Cuenta desactivada correctamente.")
+
+        # si el propio usuario se desactiva, lo sacamos de la sesión
+        if es_mismo_usuario:
+            logout(request)
+            return redirect('login')
+        else:
+            return redirect('lista_usuarios')
 
     # 👇 Definir correctamente el destino al cancelar
     if request.user == user:
-        if request.user.is_superuser:
-            destino_cancelar = 'admin_home'  # ⚠️ si el admin cancela eliminarse a sí mismo
-        else:
-            destino_cancelar = 'home'
+        destino_cancelar = 'admin_home' if request.user.is_superuser else 'home'
     else:
         destino_cancelar = 'lista_usuarios'
 
@@ -187,4 +225,9 @@ def admin_home(request):
         return redirect('home')  # Si no es admin, va a la página normal
     
     
+@user_passes_test(lambda u: u.is_superuser)
+def ver_acciones(request):
+    from .models import AccionUsuario
+    acciones = AccionUsuario.objects.select_related("usuario").order_by("-fecha")
+    return render(request, "usuarios/ver_acciones.html", {"acciones": acciones})
 

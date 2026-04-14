@@ -6,6 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="container mt-5">
+    {% load humanize %}
 
     <h1>Carrito de {{ request.user.username }}</h1>
 
@@ -17,6 +18,8 @@
                     <th>Precio</th>
                     <th>Cantidad</th>
                     <th>Subtotal</th>
+                    <th>IVA</th>
+                    <th>Total con IVA</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -24,28 +27,98 @@
                 {% for item in carrito.items.all %}
                 <tr>
                     <td>{{ item.producto.nombre }}</td>
-                    <td>${{ item.producto.precio }}</td>
+                    <td>${{ item.producto.precio|floatformat:2|intcomma }}</td>
                     <td>{{ item.cantidad }}</td>
-                    <td>${{ item.subtotal }}</td>
+                    <td>${{ item.subtotal|floatformat:2|intcomma }}</td>
+                    <td>${{ item.iva|floatformat:2|intcomma }}</td>
+                    <td>${{ item.total_con_iva|floatformat:2|intcomma }}</td>
                     <td>
-                        <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn btn-danger btn-sm">Eliminar</a>
+                        <!-- Botón modal eliminar cantidad -->
+                        <button type="button"
+                                class="btn btn-warning btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#eliminarModal{{ item.id }}">
+                            Eliminar cantidad
+                        </button>
                     </td>
                 </tr>
+
+                <!-- Modal Eliminar Cantidad -->
+                <div class="modal fade" id="eliminarModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Eliminar de {{ item.producto.nombre }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                      </div>
+                      <form method="post" action="{% url 'eliminar_del_carrito' item.id %}">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                          <p>Cantidad actual: <strong>{{ item.cantidad }}</strong></p>
+                          <div class="mb-3">
+                            <label for="cantidad{{ item.id }}" class="form-label">Cantidad a eliminar:</label>
+                            <input type="number" class="form-control"
+                                   id="cantidad{{ item.id }}"
+                                   name="cantidad"
+                                   min="1"
+                                   max="{{ item.cantidad }}"
+                                   value="1">
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                          <button type="submit" class="btn btn-danger">Eliminar</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
                 {% endfor %}
             </tbody>
         </table>
 
-        <h3>Total: ${{ carrito.total }}</h3>
+        <h3>Total sin IVA: ${{ carrito.total|floatformat:2|intcomma }}</h3>
+        <h3>Total con IVA: ${{ carrito.total_con_iva|floatformat:2|intcomma }}</h3>
+
+
 
         <div class="d-flex gap-2 mt-3">
             <a href="{% url 'home' %}" class="btn btn-secondary">⬅️ Volver al inicio</a>
-            <button class="btn btn-success">Finalizar compra</button>
+            <button id="btnFinalizar" class="btn btn-success">Finalizar compra</button>
         </div>
+
+        <!-- Importa SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                document.getElementById("btnFinalizar").addEventListener("click", function() {
+                    Swal.fire({
+                        title: '¿Desea finalizar la compra?',
+                        text: "Se generará su factura en PDF.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, finalizar',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = "{% url 'previsualizar_factura' %}";
+                        }
+                    });
+                });
+            });
+        </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
 
     {% else %}
         <p>No tienes productos en el carrito.</p>
         <a href="{% url 'home' %}" class="btn btn-secondary">⬅️ Volver al inicio</a>
     {% endif %}
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

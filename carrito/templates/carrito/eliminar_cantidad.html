@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h3>Eliminar del carrito</h3>
+    <p>Producto: <strong>{{ item.producto.nombre }}</strong></p>
+    <p>Cantidad actual: {{ item.cantidad }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <label for="cantidad">Cantidad a eliminar:</label>
+        <input type="number" name="cantidad" id="cantidad" class="form-control"
+               min="1" max="{{ item.cantidad }}" value="1" required>
+
+        <button type="submit" class="btn btn-danger mt-3">Eliminar</button>
+        <a href="{% url 'ver_carrito' %}" class="btn btn-secondary mt-3">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

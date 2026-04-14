@@ -29,6 +29,8 @@ urlpatterns = [
     path('', redirect_to_login),  # Redirige automáticamente a login
     path('productos/', include('productos.urls')),
     path("carrito/", include("carrito.urls")),
+    path('facturas/', include('facturas.urls')),
+
 
 ]
 if settings.DEBUG:
